@@ -1,0 +1,529 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/kagi-cli-logo-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset=".github/assets/kagi-cli-logo-light.svg">
+    <img src=".github/assets/kagi-cli-logo-light.svg" alt="kagi cli" width="720">
+  </picture>
+</p>
+
+
+<p align="center">
+  <a href="https://github.com/Microck/kagi-cli/releases"><img src="https://img.shields.io/github/v/release/Microck/kagi-cli?display_name=tag&style=flat-square&label=release&color=000000" alt="release badge"></a>
+  <a href="https://www.npmjs.com/package/kagi-cli"><img src="https://img.shields.io/npm/dt/kagi-cli?style=flat-square&label=downloads&color=000000" alt="npm downloads"></a>
+  <a href="https://github.com/Microck/kagi-cli/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Microck/kagi-cli/ci.yml?branch=main&style=flat-square&label=ci&color=000000" alt="ci badge"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-mit-000000?style=flat-square" alt="license badge"></a>
+</p>
+
+---
+
+`kagi` is a terminal CLI for Kagi that gives you command-line access to search, quick answers, ask-page, assistant, translate, summarization, public feeds through `news` and `smallweb`, paid API commands like `fastgpt` and `enrich`, and account-level settings like lenses, custom assistants, custom bangs, and redirect rules. it is built for people who want one command surface for interactive use, shell workflows, and structured JSON output.
+
+the main setup path is `kagi auth`. on a real terminal it opens a guided setup flow where you choose `Session Link`, `API Key`, or `Legacy API Token`, get the official instructions inline, paste the credential, save it to `~/.config/kagi-cli/config.toml`, and validate it immediately. if you also use Kagi's paid API, the same wizard can add that too.
+
+[documentation](https://kagi.micr.dev) | [npm](https://www.npmjs.com/package/kagi-cli) | [mcp](https://kagi.micr.dev/commands/mcp)
+
+![search demo](images/demos/search.gif)
+
+## why
+
+if you already use Kagi and want to access it from scripts, shell workflows, or small tools, this CLI gives you a practical path without making the paid API flow the starting point.
+
+- use your existing session-link URL for subscriber features
+- get structured JSON for scripts, agents, and other tooling
+- use one CLI for search, quick answers, assistant, translate, summarization, `news`, and `smallweb`
+- add `KAGI_API_KEY` for current `/api/v1` commands, or `KAGI_API_TOKEN` for legacy `/api/v0` commands
+
+## quickstart
+
+### Linux or macOS
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Microck/kagi-cli/main/scripts/install.sh | sh
+kagi --help
+```
+
+### Windows
+
+```powershell
+irm https://raw.githubusercontent.com/Microck/kagi-cli/main/scripts/install.ps1 | iex
+kagi --help
+```
+
+### using a package manager
+
+```bash
+npm install -g kagi-cli
+pnpm add -g kagi-cli
+bun add -g kagi-cli
+
+# homebrew
+brew tap Microck/kagi
+brew install kagi
+
+# scoop
+scoop bucket add kagi https://github.com/Microck/scoop-kagi
+scoop install kagi
+
+# AUR (arch linux)
+yay -S kagi-cli
+```
+
+### nix / nixos
+
+run it without installing:
+
+```bash
+nix run github:Microck/kagi-cli -- search "rust async"
+```
+
+install it into your Nix profile:
+
+```bash
+nix profile install github:Microck/kagi-cli
+```
+
+for NixOS or home-manager, add the flake as an input and use its default
+package or `overlays.default`.
+
+### auth
+
+run the guided setup:
+
+```bash
+kagi auth
+```
+
+the wizard is the default setup path. it guides you through:
+
+- `Session Link` from `https://kagi.com/settings/user_details`
+- `API Key` from `https://kagi.com/api/keys`
+- `Legacy API Token` from `https://kagi.com/settings/api`
+- saving into `~/.config/kagi-cli/config.toml`
+- immediate validation
+
+non-interactive alternative:
+
+add your subscriber session token directly:
+
+how to get it:
+
+1. click the top-right menu icon
+2. go into `Settings`
+3. click `Account` in the left sidebar
+4. in `Session Link`, click `Copy`
+
+![session-link tutorial](images/tutorials/session-link.gif)
+
+```bash
+kagi auth set --session-token 'https://kagi.com/search?token=...'
+kagi auth check
+```
+
+add an api key when you want current paid api commands:
+
+
+how to get it:
+
+1. click the top-right menu icon
+2. go into `Settings`
+3. open `https://kagi.com/api/keys`
+4. generate or copy an API key
+
+![api token tutorial](images/tutorials/api-token.gif)
+
+```bash
+export KAGI_API_KEY='...'
+```
+
+### mail
+
+Configure your mail MCP endpoint and OAuth client ID in a private `[mail]`
+section, then sign in once:
+
+```bash
+kagi mail login
+kagi mail boxes
+kagi mail search --mailbox Inbox --unread --limit 10
+kagi mail search "contract renewal" --semantic
+kagi mail read MESSAGE_ID --format pretty
+kagi mail read --thread THREAD_ID --new-text-only
+```
+
+Mail uses its own OAuth credentials. It supports `--profile`, JSON by default,
+and `--format compact|toon|pretty`. The MCP exposes read operations only;
+messages are not added to the local history or response cache.
+See the [mail command reference](docs/content/docs/commands/mail.mdx) for setup,
+filters, and token handling.
+
+## auth model
+
+| credential | what it unlocks |
+| --- | --- |
+| `KAGI_SESSION_TOKEN` | base search fallback, session-only search options, `quick`, `ask-page`, `assistant`, `translate`, and `summarize --subscriber` |
+| `KAGI_API_KEY` | current `/api/v1` Search API and Extract API with `Bearer` auth |
+| `KAGI_API_TOKEN` | legacy `/api/v0` public `summarize`, `fastgpt`, `enrich web`, and `enrich news` with `Bot` auth |
+| saved mail OAuth tokens or `KAGI_MAIL_ACCESS_TOKEN` | `mail boxes`, `mail search`, and `mail read` |
+| none | `news`, `smallweb`, `auth status`, `mail status`, `--help` |
+
+example config:
+
+```toml
+[auth]
+# Full Kagi session-link URL or just the raw token value.
+session_token = "https://kagi.com/search?token=kagi_session_demo_1234567890abcdef"
+
+# Current API key for Search API and Extract.
+api_key = "kagi_api_key_demo_abcdef1234567890"
+
+# Legacy API token for summarize, fastgpt, and enrich commands.
+api_token = "kagi_api_token_demo_abcdef1234567890"
+
+# Base `kagi search` auth preference: "session" or "api".
+preferred_auth = "api"
+
+[profiles.work.auth]
+session_token = "https://kagi.com/search?token=work_session_demo"
+api_key = "kagi_api_key_work_demo"
+api_token = "kagi_api_token_work_demo"
+preferred_auth = "session"
+```
+notes:
+
+- `kagi auth` is interactive on TTYs and becomes the default onboarding path
+- `kagi auth set --session-token` accepts either the raw token or the full session-link URL
+- `kagi --profile work ...` reads `[profiles.work.auth]` from the config file (`~/.config/kagi-cli/config.toml`)
+- environment variables override `~/.config/kagi-cli/config.toml`
+- base `kagi search` defaults to the session-token path when both credentials are present
+- set `[auth] preferred_auth = "api"` if you want base search to prefer the API path instead
+- API-first base search falls back to the session-token path when the API key is rejected, including quota and rate-limit failures
+- `search --lens`, `--time`, `--order`, `--verbatim`, and personalization flags require `KAGI_SESSION_TOKEN`
+- `search --region`, `--from-date`, and `--to-date` use V1 API filters when routed through `KAGI_API_KEY`
+- `auth check` validates the selected primary credential without using search fallback logic
+
+for the full command-to-token matrix, use the [`auth-matrix`](https://kagi.micr.dev/reference/auth-matrix) docs page.
+
+## command surface
+
+| command | purpose |
+| --- | --- |
+| `kagi search` | search Kagi with `json` by default, or render as `toon`, `pretty`, `compact`, `markdown`, or `csv` |
+| `kagi agent` | print the embedded agent skill guide for choosing commands, auth paths, and output formats |
+| `kagi skills` | list and load embedded, version-matched agent skills with `skills get kagi-usage` as the agent starting point |
+| `kagi batch` | run multiple searches in parallel with JSON, TOON, compact, pretty, markdown, or csv output and shared filters |
+| `kagi auth` | launch the auth wizard, or inspect, validate, and save credentials |
+| `kagi mail` | list mailboxes, search mail, and read messages or threads with separate OAuth login |
+| `kagi completion` | generate or install shell completions for bash, zsh, fish, or PowerShell |
+| `kagi summarize` | use the paid public summarizer API or the subscriber summarizer with `--subscriber` |
+| `kagi extract` | extract a page's full content as markdown through the current paid API, using `KAGI_API_KEY` directly |
+| `kagi watch` | rerun a search on an interval and emit added/removed result URLs |
+| `kagi notify` | send search or news output to a webhook |
+| `kagi history` | inspect local command history and aggregate query stats |
+| `kagi news` | read Kagi News from public JSON endpoints |
+| `kagi quick` | get a Quick Answer with references |
+| `kagi assistant` | prompt Kagi Assistant, continue threads, manage thread list/export/delete, and manage custom assistants |
+| `kagi ask-page` | ask Kagi Assistant about a specific web page |
+| `kagi translate` | translate text through Kagi Translate |
+| `kagi fastgpt` | query FastGPT through the paid API |
+| `kagi enrich` | query Kagi's web and news enrichment indexes |
+| `kagi smallweb` | fetch the Kagi Small Web feed |
+| `kagi mcp` | run a stdio MCP server exposing search, summarize, extract, quick-answer, and news tools |
+| `kagi site-pref` | manage local domain preferences that filter/reorder CLI search output |
+| `kagi lens` | list, inspect, create, update, enable, disable, and delete search lenses |
+| `kagi bang custom` | list, inspect, create, update, and delete custom bangs |
+| `kagi redirect` | list, inspect, create, update, enable, disable, and delete redirect rules |
+
+for automation, stdout stays JSON by default. Use `--format toon` for token-efficient structured output in LLM context. `--format pretty` only changes rendering for humans.
+
+## shell completion
+
+install completions automatically for your detected shell:
+
+```bash
+kagi completion install
+kagi completion install --shell fish
+```
+
+or generate a completion script and install it yourself:
+
+```bash
+# bash
+kagi completion generate bash > ~/.local/share/bash-completion/completions/kagi
+
+# zsh
+kagi completion generate zsh > ~/.zsh/completions/_kagi
+
+# fish
+kagi completion generate fish > ~/.config/fish/completions/kagi.fish
+
+# powershell
+kagi completion generate powershell >> $PROFILE
+```
+
+`kagi --generate-completion <shell>` remains available as a shortcut for script generation.
+
+see the [installation guide](https://kagi.micr.dev/guides/installation) for platform-specific setup details.
+
+## examples
+
+use search as part of a shell pipeline:
+
+```bash
+kagi search "what is mullvad"
+```
+
+switch the same command to terminal-readable output:
+
+```bash
+kagi search --format pretty "how do i exit vim"
+```
+
+scope search to one of your lenses:
+
+```bash
+kagi search --lens 2 "developer documentation"
+```
+
+prefix a search with one of your configured snaps:
+
+```bash
+kagi search --snap reddit "rust async runtime"
+```
+
+run a filtered search against the subscriber web-product path:
+
+```bash
+kagi search --region us --time month --order recency "rust release notes"
+```
+
+use explicit date bounds instead of a preset time window:
+
+```bash
+kagi search --from-date 2026-03-01 --to-date 2026-03-31 "rust release notes"
+```
+
+force personalized search on or off for one request:
+
+```bash
+kagi search --personalized "best cafes nearby"
+kagi search --no-personalized "best cafes nearby"
+```
+
+render search results without `jq`:
+
+```bash
+kagi search "rust crates" --template '{{rank}}. {{title}} - {{url}}'
+```
+
+summarize the top search results in one command:
+
+```bash
+kagi search "rust async runtime tradeoffs" --follow 3
+```
+
+watch for search result changes:
+
+```bash
+kagi watch "kagi-cli release" --interval 600 --count 6
+```
+
+run a few searches in parallel:
+
+```bash
+kagi batch "rust programming" "python tutorial" "go language"
+```
+
+read batch queries from stdin:
+
+```bash
+printf 'rust\npython\ngo\n' | kagi batch --format compact
+```
+
+change batch output format for shell pipelines:
+
+```bash
+kagi batch "rust" "python" "go" --format compact
+```
+
+continue research with assistant:
+
+```bash
+kagi assistant "plan a focused research session in the terminal"
+kagi assistant --stream "write a short implementation plan"
+kagi assistant --stream --stream-output json "write a short implementation plan"
+```
+
+run assistant with a saved assistant profile and markdown output:
+
+```bash
+kagi assistant --assistant research --format markdown "summarize the latest rust release"
+```
+
+attach local files to an assistant prompt:
+
+```bash
+kagi assistant --attach ./a.jpg --attach ./b.pdf "tell me everything about this pdf"
+```
+
+use assistant as a terminal chat client:
+
+```bash
+kagi assistant repl --model gpt-5-4-nano --export ./assistant-transcript.json
+```
+
+ask assistant about a page directly:
+
+```bash
+kagi ask-page https://rust-lang.org/ "What is this page about?"
+```
+
+list or export Assistant threads:
+
+```bash
+kagi assistant thread list
+kagi assistant thread export <THREAD_ID>
+kagi assistant thread get https://assistant.kagi.com/chat/<THREAD_ID>
+```
+
+`kagi assistant thread list` automatically follows Kagi's pagination cursor so large chat histories are returned in one response. Thread get/export/delete commands also accept Kagi Assistant chat URLs.
+
+manage custom assistants:
+
+```bash
+kagi assistant custom list
+kagi assistant custom get "Release Notes"
+kagi assistant custom create "Release Notes" --model gpt-5-4-nano --web-access --lens 2 --instructions "Focus on release diffs and migration notes."
+kagi assistant custom update "Release Notes" --bang-trigger relnotes --no-personalized
+```
+
+get a quick answer with references:
+
+```bash
+kagi quick --format pretty "what is rust"
+```
+
+translate text and keep all text-mode extras:
+
+```bash
+kagi translate "Bonjour tout le monde"
+```
+
+plain `kagi translate "..."` means `--from auto --to en`.
+
+translate from stdin:
+
+```bash
+echo "Bonjour tout le monde" | kagi translate --to ja
+```
+
+translate to a specific target language:
+
+```bash
+kagi translate "Bonjour tout le monde" --to ja
+```
+
+translate only the core text result:
+
+```bash
+kagi translate "Bonjour tout le monde" --no-alternatives --no-word-insights --no-suggestions --no-alignments
+```
+
+use the subscriber summarizer:
+
+```bash
+kagi summarize --subscriber --url https://kagi.com --summary-type keypoints --length digest
+```
+
+summarize a stream of URLs:
+
+```bash
+cat urls.txt | kagi summarize --filter --subscriber --length digest
+```
+
+use the paid api summarizer:
+
+```bash
+kagi summarize --url https://example.com --engine cecil
+```
+
+get a faster factual answer through the paid api:
+
+```bash
+kagi fastgpt "what changed in rust 1.86?"
+```
+
+query enrichment indexes:
+
+```bash
+kagi enrich web "local-first software"
+kagi enrich news "browser privacy"
+```
+
+inspect account-level search settings:
+
+```bash
+kagi lens list
+kagi bang custom list
+kagi redirect list
+```
+
+inspect or change one lens, bang, or redirect rule:
+
+```bash
+kagi lens get "Default"
+kagi lens update "Default" --description "primary search profile"
+kagi bang custom create "Docs" --trigger docs --template "https://docs.rs/releases/search?query=%s"
+kagi bang custom update docs --shortcut-menu
+kagi redirect create '^https://old.example.com/(.*)|https://new.example.com/$1'
+kagi redirect disable '^https://old.example.com/(.*)|https://new.example.com/$1'
+```
+
+## what it looks like
+
+if you want a quick feel for the cli before installing it, this is the kind of output you get from auth setup, quick answer, translate, ask-page, the subscriber summarizer, assistant, and the public news feed:
+
+![quick demo](images/demos/quick.gif)
+
+![summarize demo](images/demos/summarize.gif)
+
+![ask-page demo](images/demos/ask-page.gif)
+
+![assistant demo](images/demos/assistant.gif)
+
+![news demo](images/demos/news.gif)
+
+## building from source
+
+if you are working on the cli itself, build from a local checkout:
+
+```bash
+git clone https://github.com/Microck/kagi-cli.git
+cd kagi-cli
+cargo build --release
+./target/release/kagi --help
+```
+
+for the fuller install matrix and platform-specific setup, use the [installation guide](https://kagi.micr.dev/guides/installation).
+
+## documentation
+
+- [installation guide](https://kagi.micr.dev/guides/installation)
+- [quickstart guide](https://kagi.micr.dev/guides/quickstart)
+- [authentication guide](https://kagi.micr.dev/guides/authentication)
+- [workflows](https://kagi.micr.dev/guides/workflows)
+- [mcp command](https://kagi.micr.dev/commands/mcp)
+
+## contributing
+
+contributions are welcome. please open an issue or pull request on [github](https://github.com/Microck/kagi-cli). see the [issue templates](https://github.com/Microck/kagi-cli/issues/new/choose) for bug reports and feature requests.
+
+## disclaimer
+
+this project is unofficial and not affiliated with, endorsed by, or connected to *Kagi Inc.* it is an independent, community-built tool.
+
+*Kagi Inc.* discourages automated use of unsupported interfaces through session auth. using *Kagi Inc.* services through this auth may be considered unsupported, and *Kagi Inc.* reserves the right to refuse, restrict, or terminate service for clients automating unsupported interfaces.
+
+use this project at your own risk, and make sure your usage complies with *Kagi Inc.*'s terms of service and any applicable policies. where possible, prefer officially supported apis or documented integration methods.
+
+## license
+
+[mit license](LICENSE)
