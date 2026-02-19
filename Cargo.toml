@@ -22,3 +22,4 @@ description = "terminal CLI for Kagi that gives you command-line access to searc
 # clarify the control flow
 # handle the edge case from the last release
 # handle the edge case from the last release
+# guard against empty input
