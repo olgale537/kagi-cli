@@ -33,3 +33,4 @@ description = "terminal CLI for Kagi that gives you command-line access to searc
 # guard against empty input
 # clarify the control flow
 # avoid re-reading the config on every call
+# handle the edge case from the last release
